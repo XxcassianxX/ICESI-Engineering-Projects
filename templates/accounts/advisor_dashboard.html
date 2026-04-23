@@ -1,0 +1,110 @@
+    {% extends "base.html" %}
+{% load static %}
+
+{% block title %}Panel Asesor{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/accounts/advisor_dashboard.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="page-shell">
+    <header class="topbar">
+        <div class="topbar-logo">
+            <a href="{% url 'dashboard_redirect' %}" class="logo-link" style="display: inline-block; cursor: pointer;">
+                <img src="{% static 'images/logo.png' %}" alt="Consultorio Jurídico">
+            </a>
+        </div>
+
+        <div class="user-menu">
+            <button class="user-trigger" type="button" onclick="toggleDropdown()">
+                <div class="avatar">{{ user_data.initials }}</div>
+                <div class="user-text">
+                    <strong>{{ user_data.full_name }}</strong>
+                    <span>{{ user_data.role_name }}</span>
+                </div>
+                <div class="dropdown-arrow">⌄</div>
+            </button>
+
+            <div class="dropdown-menu" id="userDropdown">
+                <form method="post" action="{% url 'logout' %}">
+                    {% csrf_token %}
+                    <button type="submit" class="logout-button">Cerrar Sesión</button>
+                </form>
+            </div>
+        </div>
+    </header>
+
+    <main class="page-content">
+        <h1 class="page-title">Panel de Supervisión - Asesor</h1>
+        <p class="page-subtitle">Monitorea el progreso de todos los casos</p>
+
+        <section class="stats-grid">
+            <article class="stat-card">
+                <div class="stat-copy">
+                    <span>Casos Supervisados</span>
+                    <strong>{{ supervised_cases }}</strong>
+                </div>
+                <div class="stat-icon blue">📄</div>
+            </article>
+
+            <article class="stat-card">
+                <div class="stat-copy">
+                    <span>Estudiantes</span>
+                    <strong>{{ students_count }}</strong>
+                </div>
+                <div class="stat-icon purple">👥</div>
+            </article>
+
+            <article class="stat-card">
+                <div class="stat-copy">
+                    <span>Casos al Día</span>
+                    <strong>{{ cases_on_time }}</strong>
+                </div>
+                <div class="stat-icon green">📈</div>
+            </article>
+
+            <article class="stat-card">
+                <div class="stat-copy">
+                    <span>Con Retrasos</span>
+                    <strong>{{ delayed_cases }}</strong>
+                </div>
+                <div class="stat-icon red">❗</div>
+            </article>
+        </section>
+
+        <section class="shortcut-grid" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin: 24px 0;">
+            <a href="{% url 'case_distribution_list' %}" style="padding: 16px; background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%); color: white; border-radius: 8px; text-align: center; text-decoration: none; font-weight: bold; transition: transform 0.2s;">
+                ⚡ Reparto de Casos
+            </a>
+        </section>
+
+        <section class="card alerts-panel">
+            <div class="card-section">
+                <h2 class="card-title">Alertas y Notificaciones</h2>
+
+                <div class="alerts-list">
+                    {% for alert in alerts %}
+                        <article class="advisor-alert">
+                            <div class="alert-copy">
+                                <div class="alert-top">
+                                    {% if forloop.first %}
+                                        <span class="badge badge-danger">{{ alert.badge }}</span>
+                                    {% else %}
+                                        <span class="badge badge-warning">{{ alert.badge }}</span>
+                                    {% endif %}
+                                    <strong>{{ alert.case_number }}</strong>
+                                </div>
+
+                                <p><strong>{{ alert.beneficiary }}:</strong> {{ alert.text }}</p>
+                            </div>
+
+                            <a href="#" class="ghost-button">Ver Caso</a>
+                        </article>
+                    {% endfor %}
+                </div>
+            </div>
+        </section>
+    </main>
+</div>
+{% endblock %}

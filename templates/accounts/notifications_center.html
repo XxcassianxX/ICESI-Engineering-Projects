@@ -1,0 +1,127 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Centro de Notificaciones{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/accounts/notifications_center.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="notifications-page">
+    <header class="notifications-header">
+        <div class="notifications-header-left">
+            <h1>Centro de Notificaciones</h1>
+            <p>Consulta alertas importantes y casos sin actividad reciente.</p>
+        </div>
+
+        <div class="notifications-header-actions">
+            <a href="{% url 'dashboard_redirect' %}" class="back-button">
+                <i class="fa-solid fa-arrow-left"></i>
+                <span>Volver al panel</span>
+            </a>
+        </div>
+    </header>
+
+    <section class="notifications-summary">
+        <div class="summary-card total">
+            <div class="summary-icon">
+                <i class="fa-solid fa-bell"></i>
+            </div>
+            <div>
+                <h3>Total</h3>
+                <p>{{ total_notifications }}</p>
+            </div>
+        </div>
+
+        <div class="summary-card alerts">
+            <div class="summary-icon">
+                <i class="fa-solid fa-triangle-exclamation"></i>
+            </div>
+            <div>
+                <h3>Alertas</h3>
+                <p>{{ total_alerts }}</p>
+            </div>
+        </div>
+
+        <div class="summary-card inactivity">
+            <div class="summary-icon">
+                <i class="fa-regular fa-clock"></i>
+            </div>
+            <div>
+                <h3>Inactividad</h3>
+                <p>{{ total_inactivity }}</p>
+            </div>
+        </div>
+    </section>
+
+    <section class="notifications-block">
+        <div class="section-title">
+            <h2>Alertas</h2>
+            <span>{{ total_alerts }}</span>
+        </div>
+
+        {% if alert_notifications %}
+            <div class="notifications-list">
+                {% for notification in alert_notifications %}
+                    <article class="notification-card alert-card">
+                        <div class="notification-card-top">
+                            <h3>{{ notification.title }}</h3>
+                            <small>{{ notification.created_at|date:"d/m/Y h:i A" }}</small>
+                        </div>
+
+                        <p>{{ notification.message }}</p>
+
+                        <div class="notification-meta">
+                            {% if notification.case %}
+                                <span><strong>Caso:</strong> {{ notification.case.case_number }}</span>
+                            {% endif %}
+                            {% if notification.deadline %}
+                                <span><strong>Fecha límite:</strong> {{ notification.deadline.title }}</span>
+                            {% endif %}
+                        </div>
+                    </article>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="empty-state">
+                <i class="fa-regular fa-circle-check"></i>
+                <p>No hay alertas registradas.</p>
+            </div>
+        {% endif %}
+    </section>
+
+    <section class="notifications-block">
+        <div class="section-title">
+            <h2>Notificaciones por inactividad</h2>
+            <span>{{ total_inactivity }}</span>
+        </div>
+
+        {% if inactivity_notifications %}
+            <div class="notifications-list">
+                {% for notification in inactivity_notifications %}
+                    <article class="notification-card inactivity-card">
+                        <div class="notification-card-top">
+                            <h3>{{ notification.title }}</h3>
+                            <small>{{ notification.created_at|date:"d/m/Y h:i A" }}</small>
+                        </div>
+
+                        <p>{{ notification.message }}</p>
+
+                        <div class="notification-meta">
+                            {% if notification.case %}
+                                <span><strong>Caso:</strong> {{ notification.case.case_number }}</span>
+                            {% endif %}
+                        </div>
+                    </article>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="empty-state">
+                <i class="fa-regular fa-face-smile"></i>
+                <p>No hay notificaciones de inactividad.</p>
+            </div>
+        {% endif %}
+    </section>
+</div>
+{% endblock %}

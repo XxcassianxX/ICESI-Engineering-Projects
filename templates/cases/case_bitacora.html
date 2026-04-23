@@ -1,0 +1,216 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Bitácora del Caso{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/cases/case_bitacora.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="page-shell">
+    <header class="topbar">
+        <div class="topbar-logo">
+            <img src="{% static 'images/logo.png' %}" alt="Consultorio Jurídico">
+        </div>
+
+        <div class="user-menu">
+            <button class="user-trigger" type="button" onclick="toggleDropdown()">
+                <div class="avatar">{{ user_data.initials }}</div>
+                <div class="user-text">
+                    <strong>{{ user_data.full_name }}</strong>
+                    <span>{{ user_data.role_name }}</span>
+                </div>
+                <div class="dropdown-arrow">⌄</div>
+            </button>
+
+            <div class="dropdown-menu" id="userDropdown">
+                <form method="post" action="{% url 'logout' %}">
+                    {% csrf_token %}
+                    <button type="submit" class="logout-button">Cerrar Sesión</button>
+                </form>
+            </div>
+        </div>
+    </header>
+
+
+    <main class="page-content bitacora-page">
+        <div class="bitacora-header">
+            <div>
+                <h1 class="page-title">Bitácora del Caso</h1>
+                <p class="page-subtitle">
+                    Caso {{ case.case_number }} - {{ case.beneficiary.full_name }}
+                </p>
+            </div>
+        </div>
+
+        <section class="card bitacora-form-card">
+            <div class="card-section">
+                <h2 class="card-title">Agregar Nueva Entrada</h2>
+
+                <form method="post" enctype="multipart/form-data" class="bitacora-form">
+                    {% csrf_token %}
+
+                    <div class="form-group">
+                        <label class="form-label" for="{{ form.entry_type.id_for_label }}">
+                            {{ form.entry_type.label }}
+                        </label>
+                        {{ form.entry_type }}
+                        {% if form.entry_type.errors %}
+                            <div class="field-error">{{ form.entry_type.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="{{ form.content.id_for_label }}">
+                            {{ form.content.label }}
+                        </label>
+                        {{ form.content }}
+                        {% if form.content.errors %}
+                            <div class="field-error">{{ form.content.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label" for="{{ form.scheduled_for.id_for_label }}">
+                                {{ form.scheduled_for.label }}
+                            </label>
+                            {{ form.scheduled_for }}
+                            {% if form.scheduled_for.errors %}
+                                <div class="field-error">{{ form.scheduled_for.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="form-group checkbox-group">
+                            <label class="checkbox-wrap">
+                                {{ form.notify }}
+                                <span>{{ form.notify.label }}</span>
+                            </label>
+                            {% if form.notify.errors %}
+                                <div class="field-error">{{ form.notify.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="upload-box" for="id_files">
+                            <span class="upload-icon">📎</span>
+                            <span class="upload-text">
+                                <strong>Adjuntar archivos</strong>
+                                <small>PDF, imágenes u otros soportes del caso</small>
+                            </span>
+                        </label>
+
+                        {{ form.files }}
+
+                        <div id="selected-files" class="selected-files">
+                            Ningún archivo seleccionado
+                        </div>
+
+                        {% if form.files.errors %}
+                            <div class="field-error">{{ form.files.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="submit" class="primary-button submit-button">
+                            ➤ Agregar Entrada
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </section>
+
+        <section class="card entries-card">
+            <div class="card-section">
+                <h2 class="card-title">Historial de Entradas</h2>
+
+                {% if entries %}
+                    <div class="entries-timeline">
+                        {% for entry in entries %}
+                            <article class="timeline-entry">
+                                <div class="timeline-avatar">
+                                    {{ entry.author_initials }}
+                                </div>
+
+                                <div class="timeline-card">
+                                    <div class="timeline-top">
+                                        <div class="timeline-author">
+                                            <strong>{{ entry.author.full_name }}</strong>
+                                            <span>{{ entry.author_role }}</span>
+                                        </div>
+
+                                        <div class="timeline-meta">
+                                            <span class="badge badge-primary">{{ entry.get_entry_type_display }}</span>
+                                            {% if entry.notify %}
+                                                <span class="badge badge-danger">Notificado</span>
+                                            {% endif %}
+                                            <span class="timeline-date">{{ entry.created_at|date:"d/m/Y - h:i A" }}</span>
+                                        </div>
+                                    </div>
+
+                                    <div class="timeline-content">
+                                        {{ entry.content }}
+                                    </div>
+
+                                    {% if entry.scheduled_for %}
+                                        <div class="scheduled-box">
+                                            <strong>Fecha programada:</strong>
+                                            {{ entry.scheduled_for|date:"d/m/Y - h:i A" }}
+                                        </div>
+                                    {% endif %}
+
+                                    {% if entry.documents.all %}
+                                        <div class="documents-block">
+                                            <h4>Archivos adjuntos:</h4>
+                                            <div class="documents-list">
+                                                {% for doc in entry.documents.all %}
+                                                    <a class="document-pill" href="{{ doc.file.url }}" target="_blank">
+                                                        📎 {{ doc.original_name }}
+                                                    </a>
+                                                {% endfor %}
+                                            </div>
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </article>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="empty-state">
+                        No hay entradas registradas en la bitácora todavía.
+                    </div>
+                {% endif %}
+            </div>
+        </section>
+
+        <div class="bitacora-bottom-actions">
+            <a href="{% url 'case_detail' case.id %}" class="secondary-button">
+                ⌂ Volver al Detalle del Caso
+            </a>
+        </div>
+    </main>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        const fileInput = document.getElementById("id_files");
+        const selectedFiles = document.getElementById("selected-files");
+
+        if (fileInput && selectedFiles) {
+            fileInput.addEventListener("change", function () {
+                if (fileInput.files.length === 0) {
+                    selectedFiles.textContent = "Ningún archivo seleccionado";
+                    return;
+                }
+
+                const names = Array.from(fileInput.files).map(file => file.name);
+                selectedFiles.textContent = names.join(", ");
+            });
+        }
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,75 @@
+# Plan de Rollback — Consultorio Jurídico ICESI
+
+## Información General
+
+| Campo | Detalle |
+|-------|---------|
+| Proyecto | Consultorio Jurídico ICESI |
+| Sprint | PI1 |
+| Rama principal | `develop` |
+| Responsable | Equipo G1 |
+
+
+## ¿Cuándo ejecutar un rollback?
+
+- El servidor no levanta después de un merge a `develop`
+- Una funcionalidad crítica deja de funcionar (login, gestión de casos)
+- Hay errores 500 generalizados en la aplicación
+- Una migración rompe la base de datos
+
+
+## Rollback de Código
+
+### Opción 1 — Volver al commit anterior
+
+```bash
+# Ver el historial de commits para identificar el commit estable
+git log --oneline -10
+
+# Volver al commit estable (reemplaza ABC1234 con el hash del commit)
+git checkout develop
+git revert HEAD
+git push origin develop
+```
+
+### Opción 2 — Volver a un commit específico
+
+```bash
+# Identificar el hash del commit estable
+git log --oneline -10
+
+# Crear rama de emergencia desde ese commit
+git checkout -b hotfix/rollback ABC1234
+
+# Mergear a develop
+git checkout develop
+git merge hotfix/rollback
+git push origin develop
+```
+
+## Rollback de Base de Datos
+
+Si en un sprint futuro hay migraciones y hay que revertirlas:
+
+```bash
+# Ver migraciones aplicadas
+python manage.py showmigrations
+
+# Revertir a una migración específica (reemplaza 0005 con el número anterior al problemático)
+python manage.py migrate cases 0005
+python manage.py migrate accounts 0005
+```
+
+> SQLite no tiene backups automáticos. Antes de cualquier migración en un
+> ambiente compartido, copia el archivo `db.sqlite3` manualmente.
+
+
+
+## Variables de entorno
+
+Si el rollback implica restaurar el `settings.py` anterior (sin decouple),
+asegurarse de que el archivo `.env` esté presente en la raíz o el servidor
+no levantará. El `.env` **no está en el repositorio** — cada desarrollador
+debe tener su copia local.
+
+Contactar al responsable del equipo si se perdió el `.env`.

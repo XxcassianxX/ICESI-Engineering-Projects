@@ -1,0 +1,224 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Reparto de Casos{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/cases/case_distribution.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="page-shell">
+    <header class="topbar">
+        <div class="topbar-logo">
+            <img src="{% static 'images/logo.png' %}" alt="Consultorio Jurídico">
+        </div>
+
+        <div class="user-menu">
+            <button class="user-trigger" type="button" onclick="toggleDropdown()">
+                <div class="avatar">{{ user_data.initials }}</div>
+                <div class="user-text">
+                    <strong>{{ user_data.full_name }}</strong>
+                    <span>{{ user_data.role_name }}</span>
+                </div>
+                <div class="dropdown-arrow">⌄</div>
+            </button>
+
+            <div class="dropdown-menu" id="userDropdown">
+                <form method="post" action="{% url 'logout' %}">
+                    {% csrf_token %}
+                    <button type="submit" class="logout-button">Cerrar Sesión</button>
+                </form>
+            </div>
+        </div>
+    </header>
+
+    <main class="page-content">
+        <div class="page-head">
+            <div>
+                <h1 class="page-title">Reparto de Casos</h1>
+                <p class="page-subtitle">Asigna casos a estudiantes manualmente o usa el reparto automático</p>
+            </div>
+        </div>
+
+        {% if error %}
+        <div class="alert alert-error">
+            <strong>Error:</strong> {{ error }}
+        </div>
+        <div class="back-button-container">
+            <a href="{% url 'secretary_cases' %}" class="btn btn-secondary">Volver a Casos</a>
+        </div>
+        {% else %}
+
+        <div class="distribution-container">
+            <!-- Tarjeta del Caso -->
+            <div class="case-card">
+                <!-- Estado Visual -->
+                <div class="case-status {% if is_complete %}status-complete{% else %}status-incomplete{% endif %}">
+                    {% if is_complete %}
+                        <span class="status-badge status-complete">✓ Completo</span>
+                    {% else %}
+                        <span class="status-badge status-incomplete">! Incompleto</span>
+                    {% endif %}
+                </div>
+
+                <!-- Información del Beneficiario -->
+                <div class="case-header">
+                    <div class="beneficiary-info">
+                        <h2 class="beneficiary-name">{{ case.beneficiary.full_name }}</h2>
+                        <div class="case-meta">
+                            <span class="meta-item">
+                                <strong>ID:</strong> {{ case.beneficiary.id }}
+                            </span>
+                            <span class="meta-separator">|</span>
+                            <span class="meta-item">
+                                <strong>Cédula:</strong> {{ case.beneficiary.document_number }}
+                            </span>
+                            <span class="meta-separator">|</span>
+                            <span class="meta-item">
+                                <strong>Ingreso:</strong> {{ case.created_at|date:"d/m/Y" }}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Descripción del Caso -->
+                <div class="case-section">
+                    <h3 class="section-title">Descripción:</h3>
+                    <div class="section-content">
+                        <p class="case-description">{{ case.description }}</p>
+                    </div>
+                </div>
+
+                <!-- Documentos Adjuntos -->
+                <div class="case-section">
+                    <h3 class="section-title">Documentos Adjuntos:</h3>
+                    <div class="documents-grid">
+                        {% for doc in documents %}
+                        <div class="document-item document-{{ doc.css_class }}">
+                            <span class="document-label">{{ doc.label }}</span>
+                            {% if doc.exists and doc.valid %}
+                                <span class="document-status status-valid">✓</span>
+                            {% elif doc.exists and not doc.valid %}
+                                <span class="document-status status-invalid">✗</span>
+                            {% else %}
+                                <span class="document-status status-missing">—</span>
+                            {% endif %}
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <!-- Información de Completitud (si hay detalles de errores) -->
+                {% if not is_complete and completion_details.details %}
+                <div class="case-section section-warnings">
+                    <h3 class="section-title">Información Faltante:</h3>
+                    <ul class="warnings-list">
+                        {% for detail in completion_details.details %}
+                        <li class="warning-item">{{ detail }}</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+                {% endif %}
+
+                <!-- Formulario de Asignación -->
+                <form method="post" class="distribution-form">
+                    {% csrf_token %}
+
+                    <!-- Campos del Formulario -->
+                    <div class="form-group">
+                        <label for="{{ form.category.id_for_label }}" class="form-label">
+                            {{ form.category.label }} <span class="required">*</span>
+                        </label>
+                        {{ form.category }}
+                        {% if form.category.errors %}
+                            <span class="form-error">{{ form.category.errors|first }}</span>
+                        {% endif %}
+                    </div>
+
+                    <div class="form-group">
+                        <label for="{{ form.case_type.id_for_label }}" class="form-label">
+                            {{ form.case_type.label }} <span class="required">*</span>
+                        </label>
+                        {{ form.case_type }}
+                        {% if form.case_type.errors %}
+                            <span class="form-error">{{ form.case_type.errors|first }}</span>
+                        {% endif %}
+                    </div>
+
+                    <div class="form-group">
+                        <label for="{{ form.assigned_student.id_for_label }}" class="form-label">
+                            {{ form.assigned_student.label }} <span class="required">*</span>
+                        </label>
+                        {{ form.assigned_student }}
+                        {% if form.assigned_student.errors %}
+                            <span class="form-error">{{ form.assigned_student.errors|first }}</span>
+                        {% endif %}
+                    </div>
+
+                    <!-- Campo de notas (solo se muestra si está completo) -->
+                    {% if is_complete %}
+                    <div class="form-group">
+                        <label for="{{ form.notes.id_for_label }}" class="form-label">
+                            {{ form.notes.label }}
+                        </label>
+                        {{ form.notes }}
+                    </div>
+                    {% else %}
+                    <div class="form-group">
+                        <label for="id_reason" class="form-label">
+                            Motivo de revisión
+                        </label>
+                        <textarea 
+                            id="id_reason" 
+                            name="reason" 
+                            class="form-textarea" 
+                            placeholder="Explica por qué este caso necesita revisión..."
+                            rows="3"
+                        ></textarea>
+                    </div>
+                    {% endif %}
+
+                    <!-- Botón de Acción -->
+                    <div class="form-actions">
+                        <button 
+                            type="submit" 
+                            class="btn btn-action {% if is_complete %}btn-primary{% else %}btn-warning{% endif %}"
+                            {% if not is_complete and not is_complete %}disabled{% endif %}
+                        >
+                            {{ button_text }}
+                        </button>
+                        <a href="{% url 'case_detail' case.id %}" class="btn btn-secondary">
+                            Cancelar
+                        </a>
+                    </div>
+
+                    <!-- Aviso si está incompleto -->
+                    {% if not is_complete %}
+                    <div class="info-box info-warning">
+                        <strong>⚠ Caso Incompleto</strong>
+                        <p>Este caso no está completo. Se enviará a revisión para que sea completado en la etapa correspondiente.</p>
+                    </div>
+                    {% endif %}
+                </form>
+            </div>
+        </div>
+
+        {% endif %}
+    </main>
+</div>
+
+<script>
+function toggleDropdown() {
+    const dropdown = document.getElementById('userDropdown');
+    dropdown.style.display = dropdown.style.display === 'block' ? 'none' : 'block';
+}
+
+document.addEventListener('click', function(event) {
+    const userMenu = document.querySelector('.user-menu');
+    if (!userMenu.contains(event.target)) {
+        document.getElementById('userDropdown').style.display = 'none';
+    }
+});
+</script>
+{% endblock %}
